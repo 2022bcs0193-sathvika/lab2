@@ -25,7 +25,7 @@ jobs:
 
     - name: Run training script
       run: |
-        python train.py | tee output.log
+        python mlops_lab1.py | tee output.log
 
     - name: Write job summary
       run: |
