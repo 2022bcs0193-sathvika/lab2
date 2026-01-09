@@ -10,7 +10,7 @@ import json
 import os
 
 # ===== CONFIG (EDIT THIS FOR EACH EXPERIMENT) =====
-MODEL_TYPE = "linear"   # linear | lasso | ridge | rf
+MODEL_TYPE = "lasso"   # linear | lasso | ridge | rf
 TEST_SPLIT = 0.3
 ALPHA = 0.01
 N_ESTIMATORS = 100
