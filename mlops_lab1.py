@@ -14,17 +14,24 @@ MODEL_TYPE = "rf"   # linear | lasso | ridge | rf
 TEST_SPLIT = 0.3
 ALPHA = 0.1
 N_ESTIMATORS = 100
-MAX_DEPTH = 10
+MAX_DEPTH = None
 # ================================================
 
 # Load dataset
 df = pd.read_csv("dataset/winequality-red.csv", sep=";")
-X = df.drop("quality", axis=1)
+X = df[selected_features]
 y = df["quality"]
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=TEST_SPLIT, random_state=42
 )
+selected_features = [
+    "alcohol",
+    "sulphates",
+    "pH",
+    "volatile acidity"
+]
+
 
 # Select model
 if MODEL_TYPE == "linear":
@@ -43,7 +50,6 @@ elif MODEL_TYPE == "rf":
         max_depth=MAX_DEPTH,
         random_state=42
     )
-
 # Train
 model.fit(X_train, y_train)
 
