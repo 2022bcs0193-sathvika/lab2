@@ -14,6 +14,7 @@ MODEL_TYPE = "rf"   # linear | lasso | ridge | rf
 TEST_SPLIT = 0.3
 ALPHA = 0.1
 N_ESTIMATORS = 100
+MAX_DEPTH = 10
 # ================================================
 
 # Load dataset
@@ -35,9 +36,11 @@ elif MODEL_TYPE == "lasso":
 elif MODEL_TYPE == "ridge":
     model = Ridge(alpha=ALPHA)
 
+
 elif MODEL_TYPE == "rf":
     model = RandomForestRegressor(
         n_estimators=N_ESTIMATORS,
+        max_depth=MAX_DEPTH,
         random_state=42
     )
 
