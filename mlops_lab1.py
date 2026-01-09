@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import StratifiedShuffleSplit
+
 import joblib
 import json
 import os
@@ -37,9 +39,16 @@ else:
 y = df["quality"]
 
 # Train-test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=TEST_SPLIT, random_state=42
+split = StratifiedShuffleSplit(
+    n_splits=1,
+    test_size=TEST_SPLIT,
+    random_state=42
 )
+
+for train_idx, test_idx in split.split(X, y):
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+
 
 # Model selection
 if MODEL_TYPE == "linear":
