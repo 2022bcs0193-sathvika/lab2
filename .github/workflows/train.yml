@@ -45,6 +45,7 @@ jobs:
         with:
           name: model-and-metrics
           path: output/
+
   deploy:
     needs: train
     runs-on: ubuntu-latest
@@ -57,8 +58,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: model-and-metrics
-          path: output
+          path: output/
 
-      - name: Build Docker image
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
         run: |
-          docker build -t wine-quality-api:test .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest
