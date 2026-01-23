@@ -29,16 +29,22 @@ jobs:
           python mlops_lab1.py
 
       - name: Install jq
-        run: sudo apt-get install -y jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
-      - name: Extract metrics
+      - name: Extract metrics and write summary
         id: metrics
         run: |
           MSE=$(jq '.mse' output/results.json)
           R2=$(jq '.r2' output/results.json)
 
-          echo "Current MSE: $MSE"
-          echo "Current R2: $R2"
+          echo "MSE=$MSE"
+          echo "R2=$R2"
+
+          echo "### Model Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- **MSE:** $MSE" >> $GITHUB_STEP_SUMMARY
+          echo "- **R2 Score:** $R2" >> $GITHUB_STEP_SUMMARY
 
           echo "mse=$MSE" >> $GITHUB_OUTPUT
           echo "r2=$R2" >> $GITHUB_OUTPUT
