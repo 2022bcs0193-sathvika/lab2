@@ -3,8 +3,6 @@ name: Train ML Model
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
 
 jobs:
   train:
@@ -34,40 +32,16 @@ jobs:
           sudo apt-get install -y jq
 
       - name: Extract metrics and write summary
-        id: metrics
         run: |
           MSE=$(jq '.mse' output/results.json)
           R2=$(jq '.r2' output/results.json)
 
-          echo "MSE=$MSE"
-          echo "R2=$R2"
-
           echo "### Model Metrics" >> $GITHUB_STEP_SUMMARY
           echo "- **MSE:** $MSE" >> $GITHUB_STEP_SUMMARY
           echo "- **R2 Score:** $R2" >> $GITHUB_STEP_SUMMARY
-
-          echo "mse=$MSE" >> $GITHUB_OUTPUT
-          echo "r2=$R2" >> $GITHUB_OUTPUT
 
       - name: Upload model and metrics
         uses: actions/upload-artifact@v4
         with:
           name: model-and-metrics
           path: output/
-  deploy:
-    needs: train
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: model-and-metrics
-          path: output
-
-      - name: Build Docker image
-        run: |
-          docker build -t wine-quality-api:test .
