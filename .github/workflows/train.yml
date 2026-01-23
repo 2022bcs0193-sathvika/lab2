@@ -45,3 +45,20 @@ jobs:
         with:
           name: model-and-metrics
           path: output/
+  deploy:
+    needs: train
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: model-and-metrics
+          path: output
+
+      - name: Build Docker image
+        run: |
+          docker build -t wine-quality-api:test .
