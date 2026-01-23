@@ -2,14 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy dependency list
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
-COPY mlops_lab1.py .
-COPY dataset/ dataset/
-COPY output/ output/
+COPY app.py .
+COPY model.pkl .
 
-CMD ["python", "mlops_lab1.py"]
+EXPOSE 8000
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
