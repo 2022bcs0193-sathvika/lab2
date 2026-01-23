@@ -23,27 +23,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        sudo apt-get update
+        sudo apt-get install -y jq
 
     - name: Run training script
       run: |
         python mlops_lab1.py
+
+    - name: Extract metrics
+      id: metrics
+      run: |
+        MSE=$(jq '.mse' output/results.json)
+        R2=$(jq '.r2' output/results.json)
+
+        echo "Current MSE: $MSE"
+        echo "Current R2: $R2"
+
+        echo "mse=$MSE" >> $GITHUB_OUTPUT
+        echo "r2=$R2" >> $GITHUB_OUTPUT
 
     - name: Upload model and results
       uses: actions/upload-artifact@v4
       with:
         name: model-and-metrics
         path: output/
-     - name: Extract metrics
-     - name: Extract metrics
-  id: metrics
-  run: |
-    MSE=$(jq '.mse' output/results.json)
-    R2=$(jq '.r2' output/results.json)
-
-    echo "Current MSE: $MSE"
-    echo "Current R2: $R2"
-
-    echo "mse=$MSE" >> $GITHUB_OUTPUT
-    echo "r2=$R2" >> $GITHUB_OUTPUT
-
-
