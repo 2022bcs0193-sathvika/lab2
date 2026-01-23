@@ -1,4 +1,4 @@
-name: Train ML Model
+name: Lab4 CI-CD
 
 on:
   push:
@@ -6,13 +6,14 @@ on:
 
 jobs:
   train:
+    name: Train (CI)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -22,61 +23,134 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run training script
-        run: |
-          python mlops_lab1.py
-
-      - name: Install jq
-        run: |
-          sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Extract metrics and write summary
-        run: |
-          MSE=$(jq '.mse' output/results.json)
-          R2=$(jq '.r2' output/results.json)
-
-          echo "### Model Metrics" >> $GITHUB_STEP_SUMMARY
-          echo "- **MSE:** $MSE" >> $GITHUB_STEP_SUMMARY
-          echo "- **R2 Score:** $R2" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload model and metrics
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-and-metrics
-          path: output/
-
-  deploy:
-    needs: train
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: model-and-metrics
-          path: output/
-
-      # 🔍 DEBUG: ensure Dockerfile exists
-      - name: Debug Docker context
+      - name: Debug – show repo files
         run: |
           pwd
+          echo "=== ROOT ==="
           ls -la
+          echo "=== SCRIPTS ==="
+          ls -la scripts || true
+          echo "=== DATASET ==="
+          ls -la dataset || true
+
+      - name: Run training
+        run: |
+          python scripts/train.py
+
+      - name: Debug – show outputs
+        run: |
+          echo "=== OUTPUTS ==="
+          ls -la outputs || true
+          echo "=== RESULTS.JSON ==="
+          cat outputs/results.json || true
+
+      - name: Upload model + results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained_model_artifacts
+          path: |
+            outputs/model.joblib
+            outputs/results.json
+
+  deploy:
+    name: Deploy (CD)
+    runs-on: ubuntu-latest
+    needs: train
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download trained artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: trained_model_artifacts
+          path: .
+
+      - name: Debug – verify artifacts
+        run: |
+          echo "=== ROOT AFTER DOWNLOAD ==="
+          ls -la
+          echo "=== OUTPUTS ==="
+          ls -la outputs || true
+          echo "=== RESULTS.JSON ==="
+          cat outputs/results.json || true
+
+      - name: Compare metrics with BEST variables
+        id: compare
+        env:
+          BEST_R2: ${{ vars.BEST_R2 }}
+          BEST_MSE: ${{ vars.BEST_MSE }}
+        run: |
+          python - << 'PY'
+          import json, os
+
+          data = json.load(open("outputs/results.json"))
+          cur_r2 = float(data["r2"])
+          cur_mse = float(data["mse"])
+
+          best_r2 = float(os.environ["BEST_R2"])
+          best_mse = float(os.environ["BEST_MSE"])
+
+          improved = (cur_r2 > best_r2) and (cur_mse < best_mse)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"improved={'true' if improved else 'false'}\n")
+              f.write(f"cur_r2={cur_r2}\n")
+              f.write(f"cur_mse={cur_mse}\n")
+
+          print("BEST_R2:", best_r2)
+          print("BEST_MSE:", best_mse)
+          print("CUR_R2:", cur_r2)
+          print("CUR_MSE:", cur_mse)
+          print("IMPROVED:", improved)
+          PY
+
+      - name: Stop if metric did not improve
+        if: steps.compare.outputs.improved != 'true'
+        run: |
+          echo "2022BCS0209 ---- Metric did not improve"
+          exit 0
 
       - name: Login to Docker Hub
+        if: steps.compare.outputs.improved == 'true'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image
-        run: docker buildx build --load -t ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest .
-      - name: Push Docker image
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Prepare model for Docker
+        if: steps.compare.outputs.improved == 'true'
+        run: |
+          cp outputs/model.joblib model.joblib
 
-      # - name: Build and push Docker image
-      #   run: |
-      #     docker buildx build --load -t ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest .
-      #     docker push ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest
+      - name: Build & Push Docker image
+        if: steps.compare.outputs.improved == 'true'
+        run: |
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/wine_predict_2022bcs0209:latest
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Update BEST_R2 variable
+        if: steps.compare.outputs.improved == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          curl -L -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/$REPO/actions/variables/BEST_R2 \
+            -d "{\"name\":\"BEST_R2\",\"value\":\"${{ steps.compare.outputs.cur_r2 }}\"}"
+
+      - name: Update BEST_MSE variable
+        if: steps.compare.outputs.improved == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          curl -L -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/$REPO/actions/variables/BEST_MSE \
+            -d "{\"name\":\"BEST_MSE\",\"value\":\"${{ steps.compare.outputs.cur_mse }}\"}"
