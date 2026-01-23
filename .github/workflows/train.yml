@@ -34,7 +34,9 @@ jobs:
 
       - name: Show results
         run: |
+          echo "=== OUTPUT DIRECTORY ==="
           ls -la output
+          echo "=== RESULTS.JSON ==="
           cat output/results.json
 
       - name: Upload model + results
@@ -109,9 +111,8 @@ jobs:
       - name: Build & Push Docker image
         if: steps.compare.outputs.improved == 'true'
         run: |
-         docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest" .
-         docker push "${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest"
-
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest
 
       - name: Update BEST_R2
         if: steps.compare.outputs.improved == 'true'
@@ -119,7 +120,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           REPO: ${{ github.repository }}
         run: |
-          curl -X PATCH \
+          curl -L -X PATCH \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$REPO/actions/variables/BEST_R2 \
@@ -131,7 +132,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           REPO: ${{ github.repository }}
         run: |
-          curl -X PATCH \
+          curl -L -X PATCH \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/$REPO/actions/variables/BEST_MSE \
