@@ -33,3 +33,17 @@ jobs:
       with:
         name: model-and-metrics
         path: output/
+     - name: Extract metrics
+     - name: Extract metrics
+  id: metrics
+  run: |
+    MSE=$(jq '.mse' output/results.json)
+    R2=$(jq '.r2' output/results.json)
+
+    echo "Current MSE: $MSE"
+    echo "Current R2: $R2"
+
+    echo "mse=$MSE" >> $GITHUB_OUTPUT
+    echo "r2=$R2" >> $GITHUB_OUTPUT
+
+
