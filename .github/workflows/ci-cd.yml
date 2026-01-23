@@ -76,7 +76,7 @@ jobs:
           echo "Best MSE: $BEST_MSE"
 
           if (( $(echo "$R2 <= $BEST_R2" | bc -l) )) || (( $(echo "$MSE >= $BEST_MSE" | bc -l) )); then
-            echo "2022BCS0086----Metric did not improve"
+            echo "2022BCS0193----Metric did not improve"
             exit 0
           fi
 
@@ -100,5 +100,5 @@ jobs:
       - name: Build and Push Image
         if: steps.compare.outputs.deploy == 'true'
         run: |
-          docker build -t dhanasree86/wine_predict_2022bcs0086:latest .
-          docker push dhanasree86/wine_predict_2022bcs0086:latest
+          docker build -t 2022bcs0193sathvika/wine_predict_2022bcs0193:latest .
+          docker push 2022bcs0193sathvika/wine_predict_2022bcs0193:latest
