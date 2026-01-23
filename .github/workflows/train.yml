@@ -2,48 +2,49 @@ name: Train ML Model
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   train:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        sudo apt-get update
-        sudo apt-get install -y jq
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run training script
-      run: |
-        python mlops_lab1.py
+      - name: Run training script
+        run: |
+          python mlops_lab1.py
 
-    - name: Extract metrics
-      id: metrics
-      run: |
-        MSE=$(jq '.mse' output/results.json)
-        R2=$(jq '.r2' output/results.json)
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
-        echo "Current MSE: $MSE"
-        echo "Current R2: $R2"
+      - name: Extract metrics
+        id: metrics
+        run: |
+          MSE=$(jq '.mse' output/results.json)
+          R2=$(jq '.r2' output/results.json)
 
-        echo "mse=$MSE" >> $GITHUB_OUTPUT
-        echo "r2=$R2" >> $GITHUB_OUTPUT
+          echo "Current MSE: $MSE"
+          echo "Current R2: $R2"
 
-    - name: Upload model and results
-      uses: actions/upload-artifact@v4
-      with:
-        name: model-and-metrics
-        path: output/
+          echo "mse=$MSE" >> $GITHUB_OUTPUT
+          echo "r2=$R2" >> $GITHUB_OUTPUT
+
+      - name: Upload model and metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-and-metrics
+          path: output/
