@@ -70,3 +70,7 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/wine_predict_2022bcs0193:latest
+
+
+
+          
