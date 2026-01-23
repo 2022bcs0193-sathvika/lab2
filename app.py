@@ -5,8 +5,8 @@ import numpy as np
 
 app = FastAPI()
 
-NAME = "Dhanasree Gidijala"
-ROLL_NO = "2022BCS0086"
+NAME = "Sathvika Uttarwar"
+ROLL_NO = "2022BCS0193"
 
 # Load trained model (trained with top 8 features)
 model = joblib.load("model.pkl")
